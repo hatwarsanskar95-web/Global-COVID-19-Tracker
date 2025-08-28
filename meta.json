@@ -1,0 +1,11 @@
+{
+    "name": "Global COVID Tracker",
+    "short_name": "COVID Tracker",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "description": "Track global and Japan-specific COVID-19 data with charts and comparisons.",
+    "icons": []
+  }
+  

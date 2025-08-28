@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌍 Global COVID-19 Tracker 2024</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .title-shiny {
+      font-style: italic;
+      color: #ff3333;
+      text-shadow: 0 0 10px #ff0000, 0 0 20px #ff3333, 0 0 30px #cc0000;
+      font-size: 2.3rem;
+      font-weight: 800;
+      text-align: center;
+    }
+  .card {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+
+    .btn-refresh {
+      background: linear-gradient(45deg, #e53935, #b71c1c);
+    }
+
+    .btn-analyze {
+      background: linear-gradient(45deg, #1976d2, #0d47a1);
+    }
+
+    .btn-compare {
+      background: linear-gradient(45deg, #43a047, #2e7d32);
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #d32f2f;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 20px;
+    }
+
+    .lang-toggle {
+      cursor: pointer;
+      font-size: 1.3rem;
+      margin-left: 15px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-refresh {
+  background: linear-gradient(to right, #e53935, #b71c1c);
+}
+
+    .close-btn {
+      float: right;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #aaa;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+    }
+
+    .comparison-result {
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-white">
+
+  <!-- Header -->
+  <header class="relative py-6 bg-gradient-to-r from-red-900 to-red-700 shadow-lg">
+    <h1 class="title-shiny">
+      <i class="fas fa-globe-americas"></i>
+      Global COVID-19 Tracker 2024
+      <i class="fas fa-virus"></i>
+    </h1>
+    <button id="refreshBtn" class="btn btn-refresh absolute top-4 right-6" onclick="fetchData()">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+    <div class="lang-toggle absolute top-4 right-20" onclick="toggleLang()">🇬🇧 / 🇯🇵</div>
+  </header>
+
+  <!-- Loading -->
+  <div id="loading" class="hidden my-4"><div class="loader"></div></div>
+
+  <main class="container mx-auto px-4 py-8">
+
+    <!-- Japan Highlighted Section -->
+    <section class="mb-10 text-center">
+      <h2 class="text-3xl font-extrabold mb-6 text-yellow-400">🇯🇵 <span id="japanTitle">Japan - Key Statistics</span></h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card text-center bg-red-600 bg-opacity-30">
+          <h3 class="text-lg font-bold" id="jCasesLabel">Total Cases</h3>
+          <p class="text-3xl font-extrabold text-white" id="japanCases">—</p>
+        </div>
+        <div class="card text-center bg-gray-800">
+          <h3 class="text-lg font-bold" id="jDeathsLabel">Deaths</h3>
+          <p class="text-3xl font-extrabold text-red-300" id="japanDeaths">—</p>
+        </div>
+        <div class="card text-center bg-green-600 bg-opacity-30">
+          <h3 class="text-lg font-bold" id="jRecoveredLabel">Recovered</h3>
+          <p class="text-3xl font-extrabold text-green-100" id="japanRecovered">—</p>
+        </div>
+      </div>
+
+      <!-- Japan Chart -->
+      <div class="card">
+        <h3 class="text-xl font-bold mb-4" id="japanChartTitle">Japan: Daily Cases Trend</h3>
+        <div class="chart-container">
+          <canvas id="japanChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analyze Button -->
+    <div class="text-center my-8">
+      <button class="btn btn-analyze px-8 py-3" onclick="openAnalyzeModal()">
+        <i class="fas fa-search"></i> <span id="analyzeBtnText">Analyze Countries</span>
+      </button>
+    </div>
+
+    <!-- Comparison Result Section -->
+    <section id="comparisonResult" class="comparison-result">
+      <h2 class="text-2xl font-bold mb-6 text-center text-cyan-300" id="resultTitle">Comparison Result</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card">
+          <h3 class="font-bold text-lg" id="compCasesTitle">Total Cases</h3>
+          <div class="chart-container"><canvas id="compCasesChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3 class="font-bold text-lg" id="compDeathsTitle">Deaths</h3>
+          <div class="chart-container"><canvas id="compDeathsChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3 class="font-bold text-lg" id="compRecoveredTitle">Recovered</h3>
+          <div class="chart-container"><canvas id="compRecoveredChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="mt-12 p-6 bg-black bg-opacity-30 rounded-xl">
+      <h2 class="text-2xl font-bold mb-4" id="aboutTitle">About This Project</h2>
+      <p id="aboutText" class="text-gray-200 leading-relaxed">
+        This Global COVID-19 Tracker 2024 provides real-time data with a special focus on Japan. It automatically refreshes every 30 seconds to ensure up-to-date statistics. Users can analyze and compare any two countries across customizable timeframes.
+        <br><br>
+        Built with HTML, CSS, and JavaScript, it uses the Disease.sh API for live data and Chart.js for interactive visualizations. The bilingual interface supports both English and Japanese audiences.
+        <br><br>
+        Japan is highlighted due to its unique public health response, aging population, and urban density. This tracker helps citizens, researchers, and policymakers monitor trends and make informed decisions.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- Analyze Modal -->
+  <div id="analyzeModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeAnalyzeModal()">&times;</span>
+      <h3 class="text-2xl font-bold mb-6 text-red-400" id="analyzeModalTitle">🔍 Analyze Countries</h3>
+      <div class="space-y-4">
+        <label class="block" id="country1Label">Country 1</label>
+        <select id="country1" class="w-full p-3 rounded bg-gray-800 text-white"></select>
+
+        <label class="block" id="country2Label">Country 2</label>
+        <select id="country2" class="w-full p-3 rounded bg-gray-800 text-white"></select>
+
+        <label class="block" id="timeframeLabel">Timeframe</label>
+        <select id="timeframe" class="w-full p-3 rounded bg-gray-800 text-white">
+          <option value="7">1 Week</option>
+          <option value="30" selected>1 Month</option>
+          <option value="90">3 Months</option>
+          <option value="180">6 Months</option>
+          <option value="365">1 Year</option>
+        </select>
+
+        <div class="text-right">
+          <button class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500" onclick="closeAnalyzeModal()">Cancel</button>
+          <button class="btn btn-compare px-6 ml-2" onclick="runAnalysis()">Analyze</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let lang = 'en';
+    let allCountries = [];
+    let japanChart, compCasesChart, compDeathsChart, compRecoveredChart;
+
+    const translations = {
+      en: {
+        japanTitle: "Japan - Key Statistics",
+        jCasesLabel: "Total Cases",
+        jDeathsLabel: "Deaths",
+        jRecoveredLabel: "Recovered",
+        japanChartTitle: "Japan: Daily Cases Trend",
+        analyzeBtnText: "Analyze Countries",
+        analyzeModalTitle: "🔍 Analyze Countries",
+        country1Label: "Country 1",
+        country2Label: "Country 2",
+        timeframeLabel: "Timeframe",
+        resultTitle: "Comparison Result",
+        compCasesTitle: "Total Cases",
+        compDeathsTitle: "Deaths",
+        compRecoveredTitle: "Recovered",
+        aboutTitle: "About This Project",
+        aboutText: `This Global COVID-19 Tracker 2024 provides real-time data with a special focus on Japan. It automatically refreshes every 30 seconds to ensure up-to-date statistics. Users can analyze and compare any two countries across customizable timeframes.
+        <br><br>
+        Built with HTML, CSS, and JavaScript, it uses the Disease.sh API for live data and Chart.js for interactive visualizations. The bilingual interface supports both English and Japanese audiences.
+        <br><br>
+        Japan is highlighted due to its unique public health response, aging population, and urban density. This tracker helps citizens, researchers, and policymakers monitor trends and make informed decisions.`
+      },
+      ja: {
+        japanTitle: "日本 - 主要統計",
+        jCasesLabel: "感染者数",
+        jDeathsLabel: "死亡者数",
+        jRecoveredLabel: "回復者数",
+        japanChartTitle: "日本：日別感染者トレンド",
+        analyzeBtnText: "国を分析",
+        analyzeModalTitle: "🔍 国を分析",
+        country1Label: "国 1",
+        country2Label: "国 2",
+        timeframeLabel: "期間",
+        resultTitle: "比較結果",
+        compCasesTitle: "感染者数",
+        compDeathsTitle: "死亡者数",
+        compRecoveredTitle: "回復者数",
+        aboutTitle: "このプロジェクトについて",
+        aboutText: `このグローバルCOVID-19トラッカー2024は、日本に重点を置いたリアルタイムデータを提供します。30秒ごとに自動更新され、最新の統計を保証します。ユーザーは任意の2カ国を期間指定で比較分析できます。
+        <br><br>
+        HTML、CSS、JavaScriptで構築され、Disease.sh APIとChart.jsを使用。英語と日本語のバイリンガル対応。
+        <br><br>
+        日本は高齢化社会、都市の密集、独自の公衆衛生対応のため特に注目されています。市民、研究者、政策立案者が状況を把握するのに役立ちます。`
+      }
+    };
+
+    function toggleLang() {
+      lang = lang === 'en' ? 'ja' : 'en';
+      updateTexts();
+    }
+
+    function updateTexts() {
+      const t = translations[lang];
+      document.getElementById('japanTitle').textContent = t.japanTitle;
+      document.getElementById('jCasesLabel').textContent = t.jCasesLabel;
+      document.getElementById('jDeathsLabel').textContent = t.jDeathsLabel;
+      document.getElementById('jRecoveredLabel').textContent = t.jRecoveredLabel;
+      document.getElementById('japanChartTitle').textContent = t.japanChartTitle;
+      document.getElementById('analyzeBtnText').textContent = t.analyzeBtnText;
+      document.getElementById('analyzeModalTitle').textContent = t.analyzeModalTitle;
+      document.getElementById('country1Label').textContent = t.country1Label;
+      document.getElementById('country2Label').textContent = t.country2Label;
+      document.getElementById('timeframeLabel').textContent = t.timeframeLabel;
+      document.getElementById('resultTitle').textContent = t.resultTitle;
+      document.getElementById('compCasesTitle').textContent = t.compCasesTitle;
+      document.getElementById('compDeathsTitle').textContent = t.compDeathsTitle;
+      document.getElementById('compRecoveredTitle').textContent = t.compRecoveredTitle;
+      document.getElementById('aboutTitle').textContent = t.aboutTitle;
+      document.getElementById('aboutText').innerHTML = t.aboutText;
+    }
+
+    async function fetchAllCountries() {
+      try {
+        const res = await fetch('https://disease.sh/v3/covid-19/countries');
+        allCountries = await res.json();
+        const sel1 = document.getElementById('country1');
+        const sel2 = document.getElementById('country2');
+        sel1.innerHTML = sel2.innerHTML = '';
+        allCountries.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.country;
+          opt.textContent = c.country;
+          sel1.appendChild(opt.cloneNode(true));
+          sel2.appendChild(opt);
+        });
+        // Default to Japan
+        sel1.value = 'Japan';
+      } catch (err) {
+        console.error("Failed to load countries", err);
+      }
+    }
+
+    function openAnalyzeModal() {
+      document.getElementById('analyzeModal').style.display = 'flex';
+    }
+
+    function closeAnalyzeModal() {
+      document.getElementById('analyzeModal').style.display = 'none';
+    }
+
+    async function runAnalysis() {
+      const c1 = document.getElementById('country1').value;
+      const c2 = document.getElementById('country2').value;
+      const days = document.getElementById('timeframe').value;
+
+      if (!c1 || !c2) return alert(translations[lang].country1Label + " and " + translations[lang].country2Label + " are required!");
+
+      document.getElementById('loading').classList.remove('hidden');
+
+      try {
+        const [data1, data2] = await Promise.all([
+          fetch(`https://disease.sh/v3/covid-19/countries/${c1}`).then(r => r.json()),
+          fetch(`https://disease.sh/v3/covid-19/countries/${c2}`).then(r => r.json())
+        ]);
+
+        // Update charts
+        updateComparisonCharts(c1, data1, c2, data2);
+
+        // Show result
+        document.getElementById('comparisonResult').style.display = 'block';
+        window.scrollTo({ top: document.getElementById('comparisonResult').offsetTop - 100, behavior: 'smooth' });
+
+      } catch (err) {
+        alert("Failed to fetch country data.");
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+
+    function updateComparisonCharts(c1, d1, c2, d2) {
+      const labels = [c1, c2];
+      const bgColors = ['rgba(54, 162, 235, 0.7)', 'rgba(255, 99, 132, 0.7)'];
+      const borderColors = ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'];
+
+      // Cases
+      if (compCasesChart) compCasesChart.destroy();
+      const ctx1 = document.getElementById('compCasesChart').getContext('2d');
+      compCasesChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: translations[lang].compCasesTitle,
+            data: [d1.cases, d2.cases],
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+      });
+
+      // Deaths
+      if (compDeathsChart) compDeathsChart.destroy();
+      const ctx2 = document.getElementById('compDeathsChart').getContext('2d');
+      compDeathsChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: translations[lang].compDeathsTitle,
+            data: [d1.deaths, d2.deaths],
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+      });
+
+      // Recovered
+      if (compRecoveredChart) compRecoveredChart.destroy();
+      const ctx3 = document.getElementById('compRecoveredChart').getContext('2d');
+      compRecoveredChart = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: translations[lang].compRecoveredTitle,
+            data: [d1.recovered, d2.recovered],
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+      });
+    }
+
+    async function fetchJapanData() {
+      try {
+        const japan = await fetch('https://disease.sh/v3/covid-19/countries/Japan').then(r => r.json());
+        document.getElementById('japanCases').textContent = japan.cases.toLocaleString();
+        document.getElementById('japanDeaths').textContent = japan.deaths.toLocaleString();
+        document.getElementById('japanRecovered').textContent = japan.recovered.toLocaleString();
+
+        // Fetch historical data for Japan chart
+        const hist = await fetch('https://disease.sh/v3/covid-19/historical/Japan?lastdays=30').then(r => r.json());
+        const dates = Object.keys(hist.timeline.cases).slice(-14);
+        const cases = dates.map(d => hist.timeline.cases[d]);
+
+        if (japanChart) japanChart.destroy();
+        const ctx = document.getElementById('japanChart').getContext('2d');
+        japanChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: dates,
+            datasets: [{
+              label: 'Daily Cases',
+              data: cases,
+              borderColor: '#ff3333',
+              backgroundColor: 'rgba(255, 51, 51, 0.1)',
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#fff' } } },
+            scales: {
+              x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+              y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Failed to load Japan data", err);
+      }
+    }
+
+    async function fetchData() {
+      await fetchJapanData();
+    }
+
+    // Init
+    window.onload = async () => {
+      await fetchAllCountries();
+      updateTexts();
+      await fetchData();
+      setInterval(fetchData, 30000); // Auto-refresh
+    };
+  </script>
+</body>
+</html>
