@@ -92,3 +92,33 @@ PWA support for offline use
 
 👨‍💻 Author
 -Sanskar Hatwar
+
+# 🌍 Global COVID-19 Tracker  
+
+![React](https://img.shields.io/badge/React-18-blue)  
+![API](https://img.shields.io/badge/Data-API-green)  
+![License](https://img.shields.io/badge/License-MIT-orange)  
+
+A web application to track *global COVID-19 cases, recoveries, and deaths* in real-time.  
+
+---
+
+## ✨ Features
+- 🌐 Live data updates from APIs  
+- 📊 Graphs and charts for better visualization  
+- 🔍 Country-wise search  
+
+---
+
+## 🚀 Installation
+```bash
+git clone https://github.com/yourusername/covid19-tracker.git
+cd covid19-tracker
+npm install
+npm start
+
+##Contributin##
+Pull the request are Welcome. Please open an issue first to discuss major changes.
+
+##LISENCE##
+MIT 2025 Sanskar Hatwar
